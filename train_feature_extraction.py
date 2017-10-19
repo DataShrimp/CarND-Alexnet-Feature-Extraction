@@ -41,23 +41,24 @@ fc7 = tf.stop_gradient(fc7)
 
 # TODO: Add the final layer for traffic sign classification.
 shape = (fc7.get_shape().as_list()[-1], nb_classes)  # use this shape for the weight matrix
-fc8W = tf.Variable(tf.truncated_normal(shape, stddev=1e-2))
+fc8W = tf.Variable(tf.truncated_normal(shape, stddev=1e-3))
 fc8b = tf.Variable(tf.zeros(nb_classes))
-#logits = tf.matmul(fc7, fc8W) + fc8b
-logits = tf.nn.xw_plus_b(fc7, fc8W, fc8b)
+logits = tf.matmul(fc7, fc8W) + fc8b
+#logits = tf.nn.xw_plus_b(fc7, fc8W, fc8b)
 #probs = tf.nn.softmax(logits)
 
 # TODO: Define loss, training, accuracy operations.
 # HINT: Look back at your traffic signs project solution, you may
 # be able to reuse some the code.
-#rate = 0.001
+rate = 0.001
 EPOCHS = 10
 BATCH_SIZE = 128
 
 cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=y)
 loss_op = tf.reduce_mean(cross_entropy)
-opt = tf.train.AdamOptimizer()
+opt = tf.train.AdamOptimizer(rate)
 train_op = opt.minimize(loss_op, var_list=[fc8W, fc8b])
+init_op = tf.global_variables_initializer()
 
 correct_prediction = tf.arg_max(logits, 1)
 accuracy_operation = tf.reduce_mean(tf.cast(tf.equal(correct_prediction,y), tf.float32))
@@ -75,14 +76,14 @@ def evaluate(X_data, y_data, sess):
 
 # TODO: Train and evaluate the feature extraction model.
 with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
+    sess.run(init_op)
     
     for i in range(EPOCHS):
-        x_train, y_train = shuffle(X_train, y_train)
+        X_train, y_train = shuffle(X_train, y_train)
         t0 = time.time()
         for offset in range(0, X_train.shape[0], BATCH_SIZE):
             end = offset + BATCH_SIZE
-            batch_x, batch_y = x_train[offset:end], y_train[offset:end]
+            batch_x, batch_y = X_train[offset:end], y_train[offset:end]
             sess.run(train_op, feed_dict={x: batch_x, y: batch_y})
             
         val_loss, val_acc = evaluate(X_valid, y_valid, sess)
